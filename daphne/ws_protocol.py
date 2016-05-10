@@ -36,7 +36,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
                 clean_headers[name.lower()] = value.encode("latin1")
             # Reconstruct query string
             # TODO: get autobahn to provide it raw
-            query_string = urlencode(request.params, doseq=True).encode("ascii")
+            query_string = self.urlencode(request.params, doseq=True)
             # Make sending channel
             self.reply_channel = self.channel_layer.new_channel("websocket.send!")
             # Tell main factory about it
@@ -78,6 +78,17 @@ class WebSocketProtocol(WebSocketServerProtocol):
             return unquote(value).decode("utf8")
         else:
             return unquote(value.decode("ascii"))
+
+    @classmethod
+    def urlencode(cls, value, *args, **kwargs):
+        """
+        Python 2 and 3 compat layer for utf-8 url encoding
+        """
+        if six.PY2:
+            return urlencode({k: [v.encode("latin1") for v in lst] for k, lst in value.iteritems()},
+                             *args, **kwargs)
+        else:
+            return urlencode(value, *args, **kwargs)
 
     def onOpen(self):
         # Send news that this channel is open
